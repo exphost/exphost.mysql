@@ -1,0 +1,7 @@
+- name: restart mysql
+  systemd:
+    name: "{{app.value.mysql.user.user}}-mysql"
+    state: restarted
+    daemon_reload: yes
+  become: True
+  become_user: root

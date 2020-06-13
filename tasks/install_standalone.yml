@@ -1,0 +1,107 @@
+- debug:
+    msg: "{{app}}"
+- block:
+  - name: Add repository
+    yum_repository:
+      name: mariadb
+      description: MariaDB
+      baseurl: "http://yum.mariadb.org/10.4/centos$releasever-amd64"
+      gpgkey: https://yum.mariadb.org/RPM-GPG-KEY-MariaDB
+      gpgcheck: yes
+
+  - name: install policycoreutils-python, TODO - move to another role
+    yum:
+      name: policycoreutils-python
+
+  - name: install mariadb
+    yum:
+      name: mariadb-server
+
+
+  - name: install mysql tools
+    yum:
+      name: python2-PyMySQL
+
+  - name: create dirs
+    file:
+      path: "{{app.value.mysql.user.home}}/mysql/{{item}}"
+      state: directory
+    loop:
+      - conf
+      - bin
+
+  - name: create dirs 2
+    file:
+      path: "{{app.value.mysql.user.home}}/mysql/{{item}}"
+      state: directory
+      owner: "{{app.value.mysql.user.user}}"
+      group: "{{app.value.mysql.user.group}}"
+      setype: "mysqld_db_t"
+    loop:
+      - var
+
+  - name: copy config
+    template:
+      src: my.cnf
+      dest: "{{app.value.mysql.user.home}}/mysql/conf/my.cnf"
+      setype: "mysqld_etc_t"
+    notify:
+      - restart mysql
+
+  - name: add port to selinux
+    seport:
+      ports: "{{app.value.mysql.configs.port}}"
+      proto: tcp
+      setype: mysqld_port_t
+      state: present
+  
+  - name: init datadir
+    command: "/usr/bin/mysql_install_db --defaults-file={{app.value.mysql.user.home}}/mysql/conf/my.cnf"
+    args:
+      creates: "{{app.value.mysql.user.home}}/mysql/var/data/mysql"
+    become_user: "{{app.value.mysql.user.user}}"
+
+  - name: copy service file
+    template:
+      src: mysql.service
+      dest: "/etc/systemd/system/{{app.value.mysql.user.user}}-mysql.service"
+    notify:
+      - restart mysql 
+
+  - name: flush handlers
+    meta: flush_handlers
+
+  - name: start mysql
+    systemd:
+      name: "{{app.value.mysql.user.user}}-mysql"
+      state: started
+      enabled: True
+      daemon_reload: yes
+
+
+  - name: wait for mysql port
+    wait_for:
+      port: "{{app.value.mysql.configs.port}}"
+      delay: 2
+  - name: setup admin password
+    mysql_user:
+      name: "{{app.value.mysql.user.user}}"
+      password: "{{app.value.mysql.configs.pass}}"
+      host: '%'
+      priv: '*.*:ALL'
+      config_file: "{{app.value.mysql.user.home}}/mysql/conf/my.cnf"
+      login_user: "{{app.value.mysql.user.user}}"
+      login_password: "{{app.value.mysql.configs.pass}}"
+      login_unix_socket: "{{app.value.mysql.user.home}}/mysql/var/mysql.sock"
+    become_user: "{{app.value.mysql.user.user}}"
+
+  - name: Removes all anonymous user accounts
+    mysql_user:
+      name: ''
+      host_all: yes
+      state: absent
+      config_file: "{{app.value.mysql.user.home}}/mysql/conf/my.cnf"
+      login_user: "{{app.value.mysql.user.user}}"
+      login_password: "{{app.value.mysql.configs.pass}}"
+    become_user: "{{app.value.mysql.user.user}}"
+  become: True
