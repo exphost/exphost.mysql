@@ -83,25 +83,26 @@
     wait_for:
       port: "{{app.value.mysql.configs.port}}"
       delay: 2
-  - name: setup admin password
-    mysql_user:
-      name: "{{app.value.mysql.user.user}}"
-      password: "{{app.value.mysql.configs.pass}}"
-      host: '%'
-      priv: '*.*:ALL'
-      config_file: "{{app.value.mysql.user.home}}/mysql/conf/my.cnf"
-      login_user: "{{app.value.mysql.user.user}}"
-      login_password: "{{app.value.mysql.configs.pass}}"
-      login_unix_socket: "{{app.value.mysql.user.home}}/mysql/var/mysql.sock"
-    become_user: "{{app.value.mysql.user.user}}"
+  - block:
+    - name: setup admin password
+      mysql_user:
+        name: "{{app.value.mysql.user.user}}"
+        password: "{{app.value.mysql.configs.pass}}"
+        host: '%'
+        priv: '*.*:ALL,GRANT'
+        config_file: "{{app.value.mysql.user.home}}/mysql/conf/my.cnf"
+        login_user: "{{app.value.mysql.user.user}}"
+        login_password: "{{app.value.mysql.configs.pass}}"
+        login_unix_socket: "{{app.value.mysql.user.home}}/mysql/var/mysql.sock"
 
-  - name: Removes all anonymous user accounts
-    mysql_user:
-      name: ''
-      host_all: yes
-      state: absent
-      config_file: "{{app.value.mysql.user.home}}/mysql/conf/my.cnf"
-      login_user: "{{app.value.mysql.user.user}}"
-      login_password: "{{app.value.mysql.configs.pass}}"
+    - name: Removes all anonymous user accounts
+      mysql_user:
+        name: ''
+        host_all: yes
+        state: absent
+        config_file: "{{app.value.mysql.user.home}}/mysql/conf/my.cnf"
+        login_user: "{{app.value.mysql.user.user}}"
+        login_password: "{{app.value.mysql.configs.pass}}"
+
     become_user: "{{app.value.mysql.user.user}}"
   become: True
