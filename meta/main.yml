@@ -21,3 +21,6 @@ dependencies:
   - role: exphost.create_user
     vars:
       user: "{{app.value.mysql.user}}"
+  - role: exphost.mysql_content
+    when: False
+    version: v0.0.2
