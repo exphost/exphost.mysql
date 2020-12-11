@@ -1,0 +1,1 @@
+../.shared/lint.sh

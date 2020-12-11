@@ -1,0 +1,1 @@
+../.shared/libvirt-inventory.py
