@@ -4,4 +4,3 @@ app_defaults:
     group: "{{ app.key }}"
     home: "/app/{{ app.key }}"
     gid: "{{ app.value.mysql.user.uid }}"
-
