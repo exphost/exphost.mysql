@@ -9,18 +9,29 @@
       gpgkey: https://yum.mariadb.org/RPM-GPG-KEY-MariaDB
       gpgcheck: yes
 
-  - name: install policycoreutils-python, TODO - move to another role
+  - name: install libselinux-python, TODO - move to another role
     yum:
-      name: policycoreutils-python
+      name: libselinux-python
+    when: ansible_distribution_major_version == "7"
+
+  - name: install libselinux-python, TODO - move to another role
+    yum:
+      name: python3-libselinux
+    when: ansible_distribution_major_version == "8"
 
   - name: install mariadb
     yum:
       name: mariadb-server
 
-
   - name: install mysql tools
     yum:
       name: python2-PyMySQL
+    when: ansible_distribution_major_version == "7"
+
+  - name: install mysql tools
+    yum:
+      name: python3-PyMySQL
+    when: ansible_distribution_major_version == "8"
 
   - name: create dirs
     file:
@@ -56,7 +67,7 @@
       state: present
   
   - name: init datadir
-    command: "/usr/bin/mysql_install_db --defaults-file={{app.value.mysql.user.home}}/mysql/conf/my.cnf"
+    command: "/usr/bin/mysql_install_db --defaults-file={{app.value.mysql.user.home}}/mysql/conf/my.cnf --skip-test-db --auth-root-socket-user={{app.value.mysql.user.user}} --auth-root-authentication-method=socket"
     args:
       creates: "{{app.value.mysql.user.home}}/mysql/var/data/mysql"
     become_user: "{{app.value.mysql.user.user}}"
