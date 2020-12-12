@@ -3,10 +3,10 @@ Description=Mysql databse
 After=network.target
 
 [Service]
-ExecStart= /usr/bin/mysqld_safe --defaults-file={{app.value.mysql.user.home}}/mysql/conf/my.cnf
-ExecStop=/usr/bin/mysqladmin --defaults-file={{app.value.mysql.user.home}}/mysql/conf/my.cnf shutdown
-User={{app.value.mysql.user.user}}
-Group={{app.value.mysql.user.group}}
+ExecStart= /usr/bin/mysqld_safe --defaults-file={{ app.value.mysql.user.home }}/mysql/conf/my.cnf
+ExecStop=/usr/bin/mysqladmin --defaults-file={{ app.value.mysql.user.home }}/mysql/conf/my.cnf shutdown
+User={{ app.value.mysql.user.user }}
+Group={{ app.value.mysql.user.group }}
 
 [Install]
 WantedBy=multi-user.target

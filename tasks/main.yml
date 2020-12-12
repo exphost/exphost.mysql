@@ -2,13 +2,13 @@
   debug:
     msg: "jeste mysqle"
 
-- include_tasks: "install_{{app.value.mysql.install}}.yml"
+- include_tasks: "install_{{ app.value.mysql.install }}.yml"
 
 - include_role:
     name: exphost.mysql_content
   vars:
-    content: "{{app.value.mysql.content}}"
-    mysql_host: "{{inventory_hostname}}"
-    mysql_user: "{{app.value.mysql.user.user}}"
-    mysql_password: "{{app.value.mysql.configs.pass}}"
-    mysql_port: "{{app.value.mysql.configs.port}}"
+    content: "{{ app.value.mysql.content }}"
+    mysql_host: "{{ inventory_hostname }}"
+    mysql_user: "{{ app.value.mysql.user.user }}"
+    mysql_password: "{{ app.value.mysql.configs.pass }}"
+    mysql_port: "{{ app.value.mysql.configs.port }}"
