@@ -41,6 +41,13 @@
     loop:
       - conf
       - bin
+  - name: set fcontext for data
+    sefcontext:
+      target: "{{app.value.mysql.user.home}}/mysql/var/data(/.*)?"
+      setype: mysqld_db_t
+      state: present
+    notify:
+      - restorecon mysql
 
   - name: create dirs 2
     file:
@@ -52,7 +59,9 @@
       mode: 0755
     loop:
       - var
+    notify: restorecon mysql
 
+  - meta: flush_handlers
   - name: add port to selinux
     seport:
       ports: "{{ app.value.mysql.configs.port }}"

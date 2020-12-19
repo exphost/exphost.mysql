@@ -5,3 +5,8 @@
     daemon_reload: yes
   become: True
   become_user: root
+
+- name: restorecon mysql
+  command: "restorecon -ivr {{ app.value.mysql.user.home }}/mysql/var/data"
+  become: True
+  become_user: root
