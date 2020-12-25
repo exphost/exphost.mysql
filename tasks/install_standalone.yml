@@ -1,140 +1,141 @@
+---
 - debug:
     msg: "{{ app }}"
 - block:
-  - name: Add repository
-    yum_repository:
-      name: mariadb
-      description: MariaDB
-      baseurl: "http://yum.mariadb.org/10.4/centos$releasever-amd64"
-      gpgkey: https://yum.mariadb.org/RPM-GPG-KEY-MariaDB
-      gpgcheck: yes
+    - name: Add repository
+      yum_repository:
+        name: mariadb
+        description: MariaDB
+        baseurl: "http://yum.mariadb.org/10.4/centos$releasever-amd64"
+        gpgkey: https://yum.mariadb.org/RPM-GPG-KEY-MariaDB
+        gpgcheck: true
 
-  - name: install libselinux-python, TODO - move to another role
-    yum:
-      name: libselinux-python
-    when: ansible_distribution_major_version == "7"
+    - name: install libselinux-python, TODO - move to another role
+      yum:
+        name: libselinux-python
+      when: ansible_distribution_major_version == "7"
 
-  - name: install libselinux-python, TODO - move to another role
-    yum:
-      name: python3-libselinux
-    when: ansible_distribution_major_version == "8"
+    - name: install libselinux-python, TODO - move to another role
+      yum:
+        name: python3-libselinux
+      when: ansible_distribution_major_version == "8"
 
-  - name: install mariadb
-    yum:
-      name: mariadb-server
+    - name: install mariadb
+      yum:
+        name: mariadb-server
 
-  - name: install mysql tools
-    yum:
-      name: python2-PyMySQL
-    when: ansible_distribution_major_version == "7"
+    - name: install mysql tools
+      yum:
+        name: python2-PyMySQL
+      when: ansible_distribution_major_version == "7"
 
-  - name: install mysql tools
-    yum:
-      name: python3-PyMySQL
-    when: ansible_distribution_major_version == "8"
+    - name: install mysql tools
+      yum:
+        name: python3-PyMySQL
+      when: ansible_distribution_major_version == "8"
 
-  - name: create dirs
-    file:
-      path: "{{ app.value.mysql.user.home }}/mysql/{{ item }}"
-      state: directory
-      mode: 0755
-    loop:
-      - conf
-      - bin
-  - name: set fcontext for data
-    sefcontext:
-      target: "{{app.value.mysql.user.home}}/mysql/var/data(/.*)?"
-      setype: mysqld_db_t
-      state: present
-    notify:
-      - restorecon mysql
+    - name: create dirs
+      file:
+        path: "{{ app.value.mysql.user.home }}/mysql/{{ item }}"
+        state: directory
+        mode: 0755
+      loop:
+        - conf
+        - bin
+    - name: set fcontext for data
+      sefcontext:
+        target: "{{app.value.mysql.user.home}}/mysql/var/data(/.*)?"
+        setype: mysqld_db_t
+        state: present
+      notify:
+        - restorecon mysql
 
-  - name: create dirs 2
-    file:
-      path: "{{ app.value.mysql.user.home }}/mysql/{{ item }}"
-      state: directory
-      owner: "{{ app.value.mysql.user.user }}"
-      group: "{{ app.value.mysql.user.group }}"
-      setype: "mysqld_db_t"
-      mode: 0755
-    loop:
-      - var
-    notify: restorecon mysql
-
-  - meta: flush_handlers
-  - name: add port to selinux
-    seport:
-      ports: "{{ app.value.mysql.configs.port }}"
-      proto: tcp
-      setype: mysqld_port_t
-      state: present
-
-  - block:
-    - name: copy config
-      template:
-        src: my.cnf
-        dest: "{{ app.value.mysql.user.home }}/mysql/conf/my.cnf"
-        setype: "mysqld_etc_t"
-        mode: 0640
+    - name: create dirs 2
+      file:
+        path: "{{ app.value.mysql.user.home }}/mysql/{{ item }}"
+        state: directory
+        owner: "{{ app.value.mysql.user.user }}"
         group: "{{ app.value.mysql.user.group }}"
+        setype: "mysqld_db_t"
+        mode: 0755
+      loop:
+        - var
+      notify: restorecon mysql
+
+    - meta: flush_handlers
+    - name: add port to selinux
+      seport:
+        ports: "{{ app.value.mysql.configs.port }}"
+        proto: tcp
+        setype: mysqld_port_t
+        state: present
+
+    - block:
+        - name: copy config
+          template:
+            src: my.cnf
+            dest: "{{ app.value.mysql.user.home }}/mysql/conf/my.cnf"
+            setype: "mysqld_etc_t"
+            mode: 0640
+            group: "{{ app.value.mysql.user.group }}"
+          notify:
+            - restart mysql
+
+        - name: init datadir
+          command: >
+            /usr/bin/mysql_install_db
+            --defaults-file={{ app.value.mysql.user.home }}/mysql/conf/my.cnf
+            --skip-test-db
+            --user={{ app.value.mysql.user.user }}
+            --auth-root-socket-user={{ app.value.mysql.user.user }}
+            --auth-root-authentication-method=socket
+          args:
+            creates: "{{ app.value.mysql.user.home }}/mysql/var/data/mysql"
+            # become_user: "{{ app.value.mysql.user.user }}"
+
+    - name: copy service file
+      template:
+        src: mysql.service
+        dest: "/etc/systemd/system/{{ app.value.mysql.user.user }}-mysql.service"
+        mode: 0644
       notify:
         - restart mysql
 
-    - name: init datadir
-      command: >
-        /usr/bin/mysql_install_db
-        --defaults-file={{ app.value.mysql.user.home }}/mysql/conf/my.cnf
-        --skip-test-db
-        --user={{ app.value.mysql.user.user }}
-        --auth-root-socket-user={{ app.value.mysql.user.user }}
-        --auth-root-authentication-method=socket
-      args:
-        creates: "{{ app.value.mysql.user.home }}/mysql/var/data/mysql"
-#    become_user: "{{ app.value.mysql.user.user }}"
+    - name: flush handlers
+      meta: flush_handlers
 
-  - name: copy service file
-    template:
-      src: mysql.service
-      dest: "/etc/systemd/system/{{ app.value.mysql.user.user }}-mysql.service"
-      mode: 0644
-    notify:
-      - restart mysql
-
-  - name: flush handlers
-    meta: flush_handlers
-
-  - name: start mysql
-    systemd:
-      name: "{{ app.value.mysql.user.user }}-mysql"
-      state: started
-      enabled: True
-      daemon_reload: yes
+    - name: start mysql
+      systemd:
+        name: "{{ app.value.mysql.user.user }}-mysql"
+        state: started
+        enabled: true
+        daemon_reload: true
 
 
-  - name: wait for mysql port
-    wait_for:
-      port: "{{ app.value.mysql.configs.port }}"
-      delay: 2
-  - block:
-    - name: setup admin password
-      mysql_user:
-        name: "{{ app.value.mysql.user.user }}"
-        password: "{{ app.value.mysql.configs.pass }}"
-        host: '%'
-        priv: '*.*:ALL,GRANT'
-        config_file: "{{ app.value.mysql.user.home }}/mysql/conf/my.cnf"
-        login_user: "{{ app.value.mysql.user.user }}"
-        login_password: "{{ app.value.mysql.configs.pass }}"
-        login_unix_socket: "{{ app.value.mysql.user.home }}/mysql/var/mysql.sock"
+    - name: wait for mysql port
+      wait_for:
+        port: "{{ app.value.mysql.configs.port }}"
+        delay: 2
+    - block:
+        - name: setup admin password
+          mysql_user:
+            name: "{{ app.value.mysql.user.user }}"
+            password: "{{ app.value.mysql.configs.pass }}"
+            host: '%'
+            priv: '*.*:ALL,GRANT'
+            config_file: "{{ app.value.mysql.user.home }}/mysql/conf/my.cnf"
+            login_user: "{{ app.value.mysql.user.user }}"
+            login_password: "{{ app.value.mysql.configs.pass }}"
+            login_unix_socket: "{{ app.value.mysql.user.home }}/mysql/var/mysql.sock"
 
-    - name: Removes all anonymous user accounts
-      mysql_user:
-        name: ''
-        host_all: yes
-        state: absent
-        config_file: "{{ app.value.mysql.user.home }}/mysql/conf/my.cnf"
-        login_user: "{{ app.value.mysql.user.user }}"
-        login_password: "{{ app.value.mysql.configs.pass }}"
+        - name: Removes all anonymous user accounts
+          mysql_user:
+            name: ''
+            host_all: true
+            state: absent
+            config_file: "{{ app.value.mysql.user.home }}/mysql/conf/my.cnf"
+            login_user: "{{ app.value.mysql.user.user }}"
+            login_password: "{{ app.value.mysql.configs.pass }}"
 
-    become_user: "{{ app.value.mysql.user.user }}"
-  become: True
+      become_user: "{{ app.value.mysql.user.user }}"
+  become: true

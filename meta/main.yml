@@ -16,12 +16,12 @@ galaxy_info:
     - mysql
     - mariadb
 
-allow_duplicates: True
+allow_duplicates: true
 
 dependencies:
   - role: exphost.create_user
     vars:
       user: "{{ app.value.mysql.user }}"
   - role: exphost.mysql_content
-    when: False
+    when: false
     version: v0.0.2

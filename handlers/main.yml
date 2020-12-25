@@ -1,12 +1,13 @@
+---
 - name: restart mysql
   systemd:
     name: "{{ app.value.mysql.user.user }}-mysql"
     state: restarted
-    daemon_reload: yes
-  become: True
+    daemon_reload: true
+  become: true
   become_user: root
 
 - name: restorecon mysql
   command: "restorecon -ivr {{ app.value.mysql.user.home }}/mysql/var/data"
-  become: True
+  become: true
   become_user: root
