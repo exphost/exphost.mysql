@@ -1,1 +1,0 @@
-../.shared/prepare_env.sh

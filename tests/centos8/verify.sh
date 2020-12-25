@@ -1,1 +1,0 @@
-../.shared/verify.sh
