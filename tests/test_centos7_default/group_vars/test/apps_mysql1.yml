@@ -25,3 +25,14 @@ apps_mysql1:
               - "db1.*:ALL"
               - "db2.*:ALL"
             pass: password3
+      backups:
+        daily_db1:
+          database: db1
+          time:
+            hour: 21
+            minute: 37
+        daily_db2:
+          database: db2
+          time:
+            hour: 21
+            minute: 36

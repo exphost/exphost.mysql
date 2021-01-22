@@ -44,7 +44,7 @@
         - bin
     - name: set fcontext for data
       sefcontext:
-        target: "{{app.value.mysql.user.home}}/mysql/var/data(/.*)?"
+        target: "{{ app.value.mysql.user.home }}/mysql/var/data(/.*)?"
         setype: mysqld_db_t
         state: present
       notify:
@@ -60,6 +60,7 @@
         mode: 0755
       loop:
         - var
+        - backups
       notify: restorecon mysql
 
     - meta: flush_handlers
@@ -71,6 +72,17 @@
         state: present
 
     - block:
+        - name: copy backup and restore scripts
+          template:
+            src: "{{ _script }}"
+            dest: "{{ app.value.mysql.user.home }}/mysql/bin/{{ _script }}"
+            mode: 0755
+          loop:
+            - backup.sh
+            - restore.sh
+          loop_control:
+            loop_var: _script
+
         - name: copy config
           template:
             src: my.cnf
@@ -137,5 +149,17 @@
             login_user: "{{ app.value.mysql.user.user }}"
             login_password: "{{ app.value.mysql.configs.pass }}"
 
+        - name: set cron for backups
+          cron:
+            name: "{{ _cron.key }}"
+            job: "{{ app.value.mysql.user.home }}/mysql/bin/backup.sh {{ _cron.value.database }}"
+            minute: "{{ _cron.value.time.minute | default(omit) }}"
+            hour: "{{ _cron.value.time.hour | default(omit) }}"
+            day: "{{ _cron.value.time.day | default(omit) }}"
+            weekday: "{{ _cron.value.time.weekday | default(omit) }}"
+            month: "{{ _cron.value.time.month | default(omit) }}"
+          loop: "{{ app.value.mysql.backups | default({}) | dict2items() }}"
+          loop_control:
+            loop_var: _cron
       become_user: "{{ app.value.mysql.user.user }}"
   become: true
