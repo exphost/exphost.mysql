@@ -8,5 +8,5 @@ fi
 
 FILENAME=${DATABASE}_${DATE}
 mkdir -p {{ app.value.mysql.user.home }}/mysql/backups
-mysqldump -u {{ app.value.mysql.user.user }} -S {{ app.value.mysql.user.home }}/mysql/var/mysql.sock $DATABASE > {{ app.value.mysql.user.home }}/mysql/backups/${FILENAME}.sql
+mysqldump -u {{ app.value.mysql.user.user }} -h {{ inventory_hostname }} -p{{ app.value.mysql.configs.pass }} -P {{ app.value.mysql.configs.port }} $DATABASE > {{ app.value.mysql.user.home }}/mysql/backups/${FILENAME}.sql
 echo $FILENAME

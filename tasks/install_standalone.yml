@@ -76,7 +76,8 @@
           template:
             src: "{{ _script }}"
             dest: "{{ app.value.mysql.user.home }}/mysql/bin/{{ _script }}"
-            mode: 0755
+            mode: 0750
+            group: "{{ app.value.mysql.user.group }}"
           loop:
             - backup.sh
             - restore.sh
@@ -139,6 +140,15 @@
             login_user: "{{ app.value.mysql.user.user }}"
             login_password: "{{ app.value.mysql.configs.pass }}"
             login_unix_socket: "{{ app.value.mysql.user.home }}/mysql/var/mysql.sock"
+
+        - name: remove explicit localhost admin access
+          mysql_user:
+            name: '{{ app.value.mysql.user.user }}'
+            host: localhost
+            state: absent
+            config_file: "{{ app.value.mysql.user.home }}/mysql/conf/my.cnf"
+            login_user: "{{ app.value.mysql.user.user }}"
+            login_password: "{{ app.value.mysql.configs.pass }}"
 
         - name: Removes all anonymous user accounts
           mysql_user:

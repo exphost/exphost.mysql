@@ -19,4 +19,4 @@ if [ ! -e $FILENAME ]; then
     exit 3
 fi
 
-mysql -u {{ app.value.mysql.user.user }} -S {{ app.value.mysql.user.home }}/mysql/var/mysql.sock $DATABASE < ${FILENAME}
+mysql -u {{ app.value.mysql.user.user }} -h {{ inventory_hostname }} -p{{ app.value.mysql.configs.pass }} -P {{ app.value.mysql.configs.port }} $DATABASE < ${FILENAME}
